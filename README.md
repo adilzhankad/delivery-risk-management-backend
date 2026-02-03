@@ -1,64 +1,81 @@
-# Logistics Risk Management System
+# How to Run the Logistics Risk Management Project
 
-This is a web application for managing logistics and predicting delivery risks using **Machine Learning**. It helps companies track orders, manage drivers, and see analytics in real-time.
+This guide explains how to set up and start the entire backend system from scratch. The project includes a FastAPI server, a PostgreSQL database, and a machine learning service.
 
+## Step 1: Clone the Repository
 
+Open your terminal and download the code from GitHub:
 
-## Key Features
+```bash
+git clone git@github.com:adilzhankad/delivery-risk-management-backend.git
+cd delivery-risk-management-backend
 
-**User Roles**: Different access levels for Admin, Manager, Driver, and Client.
-**Order Management**: Create, search, and track orders with statuses like "New", "In Transit", "Delivered", and "Cancelled".
-**AI Risk Assessment**: A **Machine Learning (Random Forest)** model predicts if a delivery is High, Medium, or Low risk based on distance, cargo type, and timing.
-**Dashboard & Analytics**: Real-time stats on total orders and risk distribution.
-**Order Timeline**: Automatically logs every status change for a full history of the order.
-**Data Export**: Download order reports in **CSV** format for business analysis.
-
-## Tech Stack
-
-* **Backend**: FastAPI (Python 3.13).
-* **Database**: PostgreSQL with SQLAlchemy ORM.
-* **Migrations**: Alembic.
-* **Machine Learning**: Scikit-learn (Random Forest Classifier).
-* **Security**: JWT Authentication (Login/Register/Protected Routes).
-* **Infrastructure**: Docker & Docker-compose.
-
-## Project Structure
-
-```text
-logistics_project/
-├── alembic/            # Database migrations and version control
-├── app/
-│   ├── core/           # Security, JWT, and Database connection
-│   ├── models/         # Database models (User, Order, OrderHistory)
-│   ├── schemas/        # Pydantic data validation schemas
-│   ├── services/       # ML service and .pkl model files
-│   └── main.py         # Main API routes and logic
-├── ml_research/        # Dataset and model training notebooks/scripts
-├── docker-compose.yml  # Docker environment setup
-└── requirements.txt    # Project dependencies
 ```
 
+## Step 2: Configure Environment Variables
 
-## How to Run
-1) Clone the repository:
-Bash
+You must create a file named .env in the root directory to store sensitive information. Copy and paste the following content into it:
 
-git clone <your-repository-url>
-cd logistics_project
+```text
+DATABASE_URL=postgresql://user:password@db:5432/logistics_risk_db
+SECRET_KEY=your_random_secret_string
+ALGORITHM=HS256
+MAIL_USERNAME=hanagooru@gmail.com
+MAIL_PASSWORD=xjlr oyzw pfks nwqv
+MAIL_FROM=hanagooru@gmail.com
 
-2) Start the system with Docker:
-Bash
+```
 
-docker-compose up --build
+Note: The MAIL_PASSWORD is a 16-character Google App Password required for the SMTP service to send verification emails.
 
-3) Apply database migrations:
-Bash
+## Step 3: Launch the System with Docker
 
-docker-compose exec app alembic upgrade head
+The project is containerized, so you do not need to install Python or PostgreSQL manually on your machine. Run this command:
 
-## API Documentation
-The API documentation is automatically generated. Once the server is running, visit:
-* **Swagger UI**: http://127.0.0.1:8000/docs
+```bash
+docker-compose up --build -d
 
-##  Why use Machine Learning?
-Instead of using fixed rules, this system uses a Random Forest model trained on historical data. It provides a percentage-based risk score, helping managers prioritize high-risk deliveries and reduce potential delays.
+```
+
+This command builds the application and starts all services in the background.
+
+## Step 4: Update the Database Schema
+
+If you are running the project for the first time or on a new machine, you must ensure the database tables have the columns needed for email verification and soft deletion. Run these commands in your terminal:
+
+1. Access the database container:
+
+```bash
+docker exec -it logistics_db psql -U user -d logistics_risk_db
+
+```
+
+2. Run these SQL commands inside the database:
+
+```sql
+ALTER TABLE users ADD COLUMN verification_code VARCHAR(10);
+ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+\q
+
+```
+
+## Step 5: Verify the Installation
+
+Open your web browser and go to the interactive documentation:
+[http://127.0.0.1:8000/docs](https://www.google.com/search?q=http://127.0.0.1:8000/docs)
+
+You can now test the full user journey:
+
+1. Create an account using the /register endpoint.
+2. Check your email for a 6-digit code and verify it using /verify-email.
+3. Log in at /login to get a JWT token.
+4. Authorize your session in Swagger by clicking the Authorize button and entering your token.
+5. Create a delivery order at /orders to see the ML risk prediction in action.
+
+## Management Commands
+
+* To stop the project: `docker-compose down`
+* To see live error logs: `docker logs -f logistics_app`
+* To restart the server after code changes: `docker-compose restart logistics_app`
+
